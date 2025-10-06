@@ -8,6 +8,7 @@ import { FileUpload } from "@/components/features/file-upload";
 import { useHighlights } from "@/hooks/use-highlights";
 import { usePDF } from "@/hooks/use-pdf";
 import { api } from "@/lib/api";
+import { HighlightSidebar } from "@/components/features/highlight-sidebar";
 
 // Dynamically import PDFViewer with SSR disabled
 const PDFViewer = dynamic(
@@ -118,6 +119,14 @@ export default function Home() {
                 selectedColor={selectedColor}
               />
             </div>
+
+            {/* Sidebar */}
+            <HighlightSidebar
+              highlights={highlights}
+              onDeleteHighlight={removeHighlight}
+              selectedColor={selectedColor}
+              onColorChange={changeColor}
+            />
           </div>
         )}
       </div>
