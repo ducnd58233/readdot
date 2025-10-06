@@ -26,10 +26,10 @@ export function FileUpload({ onFileUploaded }: FileUploadProps) {
 
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      setError('File size exceeds 10MB limit');
+      setError("File size exceeds 10MB limit");
       return;
     }
-    
+
     setUploading(true);
     setError(null);
 

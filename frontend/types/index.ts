@@ -23,3 +23,11 @@ export interface UploadResponse {
   message: string;
   data: PDFFile;
 }
+
+export interface TextSelection {
+  text: string;
+  pageNumber: number;
+  rects: DOMRect[];
+}
+
+export type HighlightColor = '#FFEB3B' | '#4CAF50' | '#2196F3' | '#FF5722' | '#9C27B0';
