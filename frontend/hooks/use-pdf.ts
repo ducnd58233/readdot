@@ -1,18 +1,18 @@
-import { PDFFile } from "@/types";
-import { useCallback, useState } from "react";
+import { useCallback, useState } from 'react';
+import { PDFFile } from '@/types';
 
 export function usePDF() {
-  const [pdfFile, setPDFFile] = useState<PDFFile | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [pdfFile, setPdfFile] = useState<PDFFile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadPDF = useCallback((file: PDFFile) => {
     setIsLoading(true);
-    setPDFFile(file);
-    setTimeout(() => setIsLoading(false), 3000);
+    setPdfFile(file);
+    setTimeout(() => setIsLoading(false), 300);
   }, []);
 
   const resetPDF = useCallback(() => {
-    setPDFFile(null);
+    setPdfFile(null);
     setIsLoading(false);
   }, []);
 

@@ -133,3 +133,7 @@ export function FileUpload({ onFileUploaded }: FileUploadProps) {
     </div>
   );
 }
+
+FileUpload.displayName = "FileUpload";
+
+export default FileUpload;

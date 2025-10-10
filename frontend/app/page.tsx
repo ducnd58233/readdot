@@ -1,28 +1,29 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { FileUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { FileUpload } from "@/components/features/file-upload";
-import { useHighlights } from "@/hooks/use-highlights";
-import { usePDF } from "@/hooks/use-pdf";
+import { useRef, useState } from "react";
+import FileUpload from "@/components/features/file-upload";
+import HighlightSidebar from "@/components/features/highlight-sidebar";
+import { PDFFile, Highlight, HighlightColor } from "@/types";
 import { api } from "@/lib/api";
-import { HighlightSidebar } from "@/components/features/highlight-sidebar";
+
+export interface PDFViewerRef {
+  scrollToHighlight: (highlight: Highlight) => void;
+}
 
 // Dynamically import PDFViewer with SSR disabled
 const PDFViewer = dynamic(
   () =>
     import("@/components/features/pdf-viewer").then((mod) => ({
-      default: mod.PDFViewer,
+      default: mod.default,
     })),
   {
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center space-y-4">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-          <p className="text-sm text-muted-foreground">Loading PDF viewer...</p>
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-4"></div>
+          <div className="text-gray-500">Loading PDF viewer...</div>
         </div>
       </div>
     ),
@@ -30,73 +31,80 @@ const PDFViewer = dynamic(
 );
 
 export default function Home() {
-  const { pdfFile, loadPDF, resetPDF } = usePDF();
-  const {
-    highlights,
-    selectedColor,
-    addHighlight,
-    removeHighlight,
-    clearHighlights,
-    changeColor,
-  } = useHighlights();
+  const [pdfFile, setPdfFile] = useState<PDFFile | null>(null);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [selectedColor, setSelectedColor] = useState<HighlightColor>("#FFEB3B");
+  const pdfViewerRef = useRef<PDFViewerRef>(null);
 
-  const handleFileUploaded = (file: typeof pdfFile) => {
-    if (!file) return;
+  const handleFileUploaded = (file: PDFFile) => {
+    console.log("File uploaded:", file);
+    console.log("File URL:", file.url);
+    console.log("API getFileUrl result:", api.getFileUrl(file.url));
+    setPdfFile(file);
+    setHighlights([]);
+  };
 
-    console.log("File uploaded:", {
-      filename: file.original_filename,
-      hasUrl: !!file.url,
-      urlType: typeof file.url,
-      urlLength: file.url?.length || 0,
-      urlPreview: file.url?.substring(0, 50) + "...",
-    });
+  const handleAddHighlight = (
+    highlightData: Omit<Highlight, "id" | "timestamp">
+  ) => {
+    const newHighlight: Highlight = {
+      ...highlightData,
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+    };
 
-    // Validate file has URL
-    if (!file.url) {
-      console.error("File URL is missing!");
-      return;
-    }
+    setHighlights((prev) => [...prev, newHighlight]);
+  };
 
-    loadPDF(file);
-    clearHighlights();
+  const handleDeleteHighlight = (id: string) => {
+    setHighlights((prev) => prev.filter((h) => h.id !== id));
+  };
+
+  const handleHighlightClick = (highlight: Highlight) => {
+    pdfViewerRef.current?.scrollToHighlight(highlight);
+  };
+
+  const handleUpdateNote = (id: string, note: string) => {
+    setHighlights(prev => 
+      prev.map(h => h.id === id ? { ...h, note: note || undefined } : h)
+    );
   };
 
   const handleReset = () => {
-    resetPDF();
-    clearHighlights();
+    setPdfFile(null);
+    setHighlights([]);
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <FileUp className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">PDF Highlighter</h1>
-              <p className="text-xs text-muted-foreground">
-                Upload, read, and highlight your documents
-              </p>
-            </div>
+      <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              PDF Highlighter
+            </h1>
+            <p className="text-sm text-gray-500">
+              Upload, read, and highlight your PDF documents
+            </p>
           </div>
 
           {pdfFile && (
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-sm font-medium">
+                <p className="text-sm font-medium text-gray-700">
                   {pdfFile.original_filename}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-500">
                   {(pdfFile.size / 1024).toFixed(1)} KB
                 </p>
               </div>
-              <Separator orientation="vertical" className="h-8" />
-              <Button variant="destructive" size="sm" onClick={handleReset}>
+              <button
+                onClick={handleReset}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
+              >
                 Upload New File
-              </Button>
+              </button>
             </div>
           )}
         </div>
@@ -105,7 +113,7 @@ export default function Home() {
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         {!pdfFile ? (
-          <div className="h-full flex items-center justify-center p-8">
+          <div className="h-full flex items-center justify-center">
             <FileUpload onFileUploaded={handleFileUploaded} />
           </div>
         ) : (
@@ -113,9 +121,10 @@ export default function Home() {
             {/* PDF Viewer */}
             <div className="flex-1 overflow-hidden">
               <PDFViewer
+                ref={pdfViewerRef}
                 fileUrl={api.getFileUrl(pdfFile.url)}
                 highlights={highlights}
-                onAddHighlight={addHighlight}
+                onAddHighlight={handleAddHighlight}
                 selectedColor={selectedColor}
               />
             </div>
@@ -123,9 +132,11 @@ export default function Home() {
             {/* Sidebar */}
             <HighlightSidebar
               highlights={highlights}
-              onDeleteHighlight={removeHighlight}
+              onDeleteHighlight={handleDeleteHighlight}
+              onUpdateNote={handleUpdateNote}
+              onHighlightClick={handleHighlightClick}
               selectedColor={selectedColor}
-              onColorChange={changeColor}
+              onColorChange={setSelectedColor}
             />
           </div>
         )}

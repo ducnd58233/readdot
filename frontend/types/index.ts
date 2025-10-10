@@ -10,6 +10,7 @@ export interface Highlight {
     height: number;
   };
   timestamp: number;
+  note?: string;
 }
 
 export interface PDFFile {
